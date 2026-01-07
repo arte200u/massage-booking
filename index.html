@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Запис на масаж</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #000000; --bg-secondary: #1a1a1a; --bg-card: #0a0a0a;
+            --accent: #ffffff; --accent-hover: #e0e0e0;
+            --text-primary: #ffffff; --text-secondary: #888888; --border: #2a2a2a;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-primary); color: var(--text-primary); overflow-x: hidden; padding-bottom: 80px;
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; padding: 30px 0 20px; border-bottom: 1px solid var(--border); }
+        .header h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
+        .header p { color: var(--text-secondary); font-size: 14px; }
+        .section { margin-top: 30px; }
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: 15px; padding-left: 5px; }
+        .city-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 30px; margin-bottom: 15px; cursor: pointer; transition: all 0.3s ease; text-align: center;
+        }
+        .city-card:hover { border-color: var(--accent); transform: translateY(-3px); background: var(--bg-secondary); }
+        .city-card-icon { font-size: 48px; margin-bottom: 15px; }
+        .city-card-name { font-size: 24px; font-weight: 600; margin-bottom: 5px; }
+        .city-card-info { color: var(--text-secondary); font-size: 14px; }
+        .salon-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s ease;
+        }
+        .salon-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .salon-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .salon-card-title { font-size: 18px; font-weight: 600; margin-bottom: 5px; }
+        .salon-card-badge { background: var(--accent); color: var(--bg-primary); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .salon-card-address { color: var(--text-secondary); font-size: 14px; margin-bottom: 8px; }
+        .salon-card-info { display: flex; gap: 15px; color: var(--text-secondary); font-size: 13px; }
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s ease;
+            display: flex; gap: 15px; align-items: center;
+        }
+        .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .master-avatar { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; border: 2px solid var(--border); flex-shrink: 0; }
+        .master-info { flex: 1; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .card-title { font-size: 16px; font-weight: 500; }
+        .card-badge { background: var(--accent); color: var(--bg-primary); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .card-info { color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
+        .time-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .time-slot {
+            background: var(--bg-card); border: 1px solid var(--border); padding: 12px;
+            border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.2s ease; font-size: 14px;
+        }
+        .time-slot:hover { border-color: var(--accent); }
+        .time-slot.selected { background: var(--accent); color: var(--bg-primary); border-color: var(--accent); font-weight: 600; }
+        .date-selector { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; scrollbar-width: none; -ms-overflow-style: none; }
+        .date-selector::-webkit-scrollbar { display: none; }
+        .date-item {
+            min-width: 80px; background: var(--bg-card); border: 1px solid var(--border);
+            padding: 15px 10px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease;
+        }
+        .date-item:hover { border-color: var(--accent); }
+        .date-item.selected { background: var(--accent); color: var(--bg-primary); border-color: var(--accent); }
+        .date-day { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+        .date-month { font-size: 12px; opacity: 0.7; }
+        .button-primary {
+            width: 100%; background: var(--accent); color: var(--bg-primary); border: none;
+            padding: 16px; border-radius: 10px; font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s ease; margin-top: 20px;
+        }
+        .button-primary:hover { background: var(--accent-hover); transform: scale(0.98); }
+        .summary { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 20px; }
+        .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .summary-row:last-child { border-bottom: none; font-weight: 600; font-size: 18px; padding-top: 15px; }
+        .summary-label { color: var(--text-secondary); }
+        .summary-value { font-weight: 500; }
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .button-secondary {
+            flex: 1; background: transparent; color: var(--accent); border: 1px solid var(--border);
+            padding: 14px; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;
+        }
+        .button-secondary:hover { border-color: var(--accent); background: var(--bg-secondary); }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .empty-state-icon { font-size: 48px; margin-bottom: 15px; opacity: 0.5; }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; padding: 15px 20px; color: var(--text-secondary); font-size: 14px; border-bottom: 1px solid var(--border); }
+        .breadcrumb span { cursor: pointer; transition: color 0.2s; }
+        .breadcrumb span:hover { color: var(--accent); }
+        .breadcrumb .separator { cursor: default; }
+        .breadcrumb .separator:hover { color: var(--text-secondary); }
+        .service-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s ease; }
+        .service-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="cityView" class="view active">
+            <div class="header"><h1>Оберіть місто</h1><p>Де вам зручніше записатись?</p></div>
+            <div class="section">
+                <div class="city-card" onclick="selectCity('Київ')"><div class="city-card-icon">🏙️</div><div class="city-card-name">Київ</div><div class="city-card-info">3 салони доступно</div></div>
+                <div class="city-card" onclick="selectCity('Львів')"><div class="city-card-icon">🏛️</div><div class="city-card-name">Львів</div><div class="city-card-info">2 салони доступно</div></div>
+            </div>
+        </div>
+        <div id="salonView" class="view">
+            <div class="breadcrumb"><span onclick="showView('cityView')">Місто</span><span class="separator">→</span><span>Салон</span></div>
+            <div class="header"><h1 id="cityNameHeader">Оберіть салон</h1><p>Виберіть зручний для вас салон</p></div>
+            <div class="section"><div id="salonsList"></div></div>
+        </div>
+        <div id="masterView" class="view">
+            <div class="breadcrumb"><span onclick="showView('cityView')">Місто</span><span class="separator">→</span><span onclick="showView('salonView')">Салон</span><span class="separator">→</span><span>Майстри</span></div>
+            <div class="header"><h1 id="salonNameHeader">Майстри</h1><p>Оберіть зручного майстра</p></div>
+            <div class="section"><div id="mastersList"></div></div>
+        </div>
+        <div id="serviceView" class="view">
+            <div class="breadcrumb"><span onclick="showView('cityView')">Місто</span><span class="separator">→</span><span onclick="showView('salonView')">Салон</span><span class="separator">→</span><span onclick="showView('masterView')">Майстри</span><span class="separator">→</span><span>Послуги</span></div>
+            <div class="header"><h1 id="masterName">Майстер</h1><p>Оберіть послугу</p></div>
+            <div class="section"><div id="servicesList"></div></div>
+        </div>
+        <div id="dateTimeView" class="view">
+            <div class="breadcrumb"><span onclick="showView('cityView')">Місто</span><span class="separator">→</span><span onclick="showView('salonView')">Салон</span><span class="separator">→</span><span onclick="showView('masterView')">Майстри</span><span class="separator">→</span><span onclick="showView('serviceView')">Послуги</span><span class="separator">→</span><span>Дата та час</span></div>
+            <div class="header"><h1>Оберіть дату та час</h1><p id="selectedService">Послуга</p></div>
+            <div class="section"><div class="section-title">Дата</div><div class="date-selector" id="dateSelector"></div></div>
+            <div class="section"><div class="section-title">Час</div><div class="time-slots" id="timeSlots"><div class="empty-state"><div class="empty-state-icon">🕐</div><p>Оберіть дату</p></div></div></div>
+        </div>
+        <div id="confirmView" class="view">
+            <div class="header"><h1>Підтвердження запису</h1><p>Перевірте деталі вашого запису</p></div>
+            <div class="summary">
+                <div class="summary-row"><span class="summary-label">Салон</span><span class="summary-value" id="confirmSalon"></span></div>
+                <div class="summary-row"><span class="summary-label">Адреса</span><span class="summary-value" id="confirmAddress"></span></div>
+                <div class="summary-row"><span class="summary-label">Майстер</span><span class="summary-value" id="confirmMaster"></span></div>
+                <div class="summary-row"><span class="summary-label">Послуга</span><span class="summary-value" id="confirmService"></span></div>
+                <div class="summary-row"><span class="summary-label">Дата</span><span class="summary-value" id="confirmDate"></span></div>
+                <div class="summary-row"><span class="summary-label">Час</span><span class="summary-value" id="confirmTime"></span></div>
+                <div class="summary-row"><span class="summary-label">Вартість</span><span class="summary-value" id="confirmPrice"></span></div>
+            </div>
+            <button class="button-primary" onclick="confirmBooking()">Підтвердити запис</button>
+            <div style="display:flex;gap:10px;margin-top:20px;"><button class="button-secondary" onclick="showView('dateTimeView')">← Назад</button></div>
+        </div>
+        <div id="successView" class="view">
+            <div class="empty-state" style="padding:100px 20px;"><div class="empty-state-icon" style="font-size:80px;opacity:1;">✓</div><h2 style="margin-bottom:10px;color:var(--text-primary);">Запис підтверджено!</h2><p>Чекаємо на вас</p></div>
+            <button class="button-primary" onclick="showView('cityView'); resetBooking();">На головну</button>
+        </div>
+    </div>
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        let bookingData = { city: null, salon: null, master: null, service: null, date: null, time: null };
+        const testData = {
+            salons: {
+                'Київ': [
+                    { id: 1, name: 'Relax SPA', address: 'вул. Хрещатик, 22', rating: '4.9', reviews: '120' },
+                    { id: 2, name: 'Beauty Zone', address: 'вул. Саксаганського, 45', rating: '5.0', reviews: '95' },
+                    { id: 3, name: 'Wellness Center', address: 'просп. Перемоги, 67', rating: '4.8', reviews: '156' }
+                ],
+                'Львів': [
+                    { id: 4, name: 'Elite Massage', address: 'вул. Городоцька, 15', rating: '4.9', reviews: '87' },
+                    { id: 5, name: 'SPA Lviv', address: 'просп. Свободи, 33', rating: '4.7', reviews: '64' }
+                ]
+            },
+            masters: {
+                1: [
+                    { id: 1, name: 'Олена Коваленко', experience: '5 років досвіду', rating: '4.9', avatar: 'https://i.pravatar.cc/150?img=1' },
+                    { id: 2, name: 'Марія Шевченко', experience: '7 років досвіду', rating: '5.0', avatar: 'https://i.pravatar.cc/150?img=5' }
+                ],
+                2: [
+                    { id: 3, name: 'Анна Бондаренко', experience: '3 роки досвіду', rating: '4.8', avatar: 'https://i.pravatar.cc/150?img=9' },
+                    { id: 4, name: 'Софія Ткаченко', experience: '6 років досвіду', rating: '4.9', avatar: 'https://i.pravatar.cc/150?img=10' }
+                ],
+                3: [
+                    { id: 5, name: 'Катерина Мельник', experience: '4 роки досвіду', rating: '4.7', avatar: 'https://i.pravatar.cc/150?img=20' },
+                    { id: 6, name: 'Ірина Савченко', experience: '8 років досвіду', rating: '5.0', avatar: 'https://i.pravatar.cc/150?img=25' }
+                ],
+                4: [
+                    { id: 7, name: 'Ірина Мельник', experience: '6 років досвіду', rating: '4.9', avatar: 'https://i.pravatar.cc/150?img=30' },
+                    { id: 8, name: 'Наталія Коваль', experience: '5 років досвіду', rating: '4.8', avatar: 'https://i.pravatar.cc/150?img=35' }
+                ],
+                5: [
+                    { id: 9, name: 'Оксана Ткаченко', experience: '4 роки досвіду', rating: '4.7', avatar: 'https://i.pravatar.cc/150?img=40' },
+                    { id: 10, name: 'Юлія Петренко', experience: '7 років досвіду', rating: '4.9', avatar: 'https://i.pravatar.cc/150?img=45' }
+                ]
+            },
+            services: [
+                { id: 1, name: 'Класичний масаж', duration: 60, price: 500 },
+                { id: 2, name: 'Спортивний масаж', duration: 90, price: 700 },
+                { id: 3, name: 'Релакс масаж', duration: 60, price: 550 },
+                { id: 4, name: 'Антицелюлітний масаж', duration: 75, price: 650 },
+                { id: 5, name: 'Тайський масаж', duration: 120, price: 900 },
+                { id: 6, name: 'Масаж обличчя', duration: 45, price: 400 }
+            ],
+            timeSlots: ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30', '19:00']
+        };
+        function selectCity(city) {
+            bookingData.city = city;
+            document.getElementById('cityNameHeader').textContent = `Салони у ${city}`;
+            showSalons(city);
+            showView('salonView');
+        }
+        function showSalons(city) {
+            const container = document.getElementById('salonsList');
+            container.innerHTML = '';
+            const salons = testData.salons[city] || [];
+            salons.forEach(salon => {
+                const card = document.createElement('div');
+                card.className = 'salon-card';
+                card.onclick = () => selectSalon(salon);
+                card.innerHTML = `<div class="salon-card-header"><div><div class="salon-card-title">${salon.name}</div><div class="salon-card-address">📍 ${salon.address}</div></div><div class="salon-card-badge">★ ${salon.rating}</div></div><div class="salon-card-info"><span>💬 ${salon.reviews} відгуків</span></div>`;
+                container.appendChild(card);
+            });
+        }
+        function selectSalon(salon) {
+            bookingData.salon = salon;
+            document.getElementById('salonNameHeader').textContent = salon.name;
+            showMasters(salon.id);
+            showView('masterView');
+        }
+        function showMasters(salonId) {
+            const container = document.getElementById('mastersList');
+            container.innerHTML = '';
+            const masters = testData.masters[salonId] || [];
+            masters.forEach(master => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => selectMaster(master);
+                card.innerHTML = `<img src="${master.avatar}" alt="${master.name}" class="master-avatar"><div class="master-info"><div class="card-header"><div class="card-title">${master.name}</div><div class="card-badge">★ ${master.rating}</div></div><div class="card-info">${master.experience}</div></div>`;
+                container.appendChild(card);
+            });
+        }
+        function selectMaster(master) {
+            bookingData.master = master;
+            document.getElementById('masterName').textContent = master.name;
+            showServices();
+            showView('serviceView');
+        }
+        function showServices() {
+            const container = document.getElementById('servicesList');
+            container.innerHTML = '';
+            testData.services.forEach(service => {
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                card.onclick = () => selectService(service);
+                card.innerHTML = `<div class="card-header"><div class="card-title">${service.name}</div><div class="card-badge">${service.price} грн</div></div><div class="card-info"><span>⏱ Тривалість: ${service.duration} хв</span></div>`;
+                container.appendChild(card);
+            });
+        }
+        function selectService(service) {
+            bookingData.service = service;
+            document.getElementById('selectedService').textContent = service.name;
+            showDates();
+            showView('dateTimeView');
+        }
+        function showDates() {
+            const container = document.getElementById('dateSelector');
+            container.innerHTML = '';
+            const months = ['Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер', 'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру'];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() + i);
+                const dateItem = document.createElement('div');
+                dateItem.className = 'date-item';
+                dateItem.onclick = () => selectDate(date, dateItem);
+                dateItem.innerHTML = `<div class="date-day">${date.getDate()}</div><div class="date-month">${months[date.getMonth()]}</div>`;
+                container.appendChild(dateItem);
+            }
+        }
+        function selectDate(date, element) {
+            bookingData.date = date;
+            document.querySelectorAll('.date-item').forEach(item => item.classList.remove('selected'));
+            element.classList.add('selected');
+            showTimeSlots();
+        }
+        function showTimeSlots() {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            testData.timeSlots.forEach(time => {
+                const slot = document.createElement('div');
+                slot.className = 'time-slot';
+                slot.textContent = time;
+                slot.onclick = () => selectTime(time, slot);
+                container.appendChild(slot);
+            });
+        }
+        function selectTime(time, element) {
+            bookingData.time = time;
+            document.querySelectorAll('.time-slot').forEach(slot => slot.classList.remove('selected'));
+            element.classList.add('selected');
+            setTimeout(() => showConfirmation(), 300);
+        }
+        function showConfirmation() {
+            document.getElementById('confirmSalon').textContent = bookingData.salon.name;
+            document.getElementById('confirmAddress').textContent = bookingData.salon.address;
+            document.getElementById('confirmMaster').textContent = bookingData.master.name;
+            document.getElementById('confirmService').textContent = bookingData.service.name;
+            document.getElementById('confirmDate').textContent = bookingData.date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('confirmTime').textContent = bookingData.time;
+            document.getElementById('confirmPrice').textContent = bookingData.service.price + ' грн';
+            showView('confirmView');
+        }
+        function confirmBooking() {
+            console.log('Booking confirmed:', bookingData);
+            tg.sendData(JSON.stringify(bookingData));
+            showView('successView');
+        }
+        function resetBooking() {
+            bookingData = { city: null, salon: null, master: null, service: null, date: null, time: null };
+        }
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
